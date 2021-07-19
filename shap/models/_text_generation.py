@@ -3,16 +3,6 @@ from ._model import Model
 from ..utils import record_import_error, safe_isinstance
 from .._serializable import Serializer, Deserializer
 
-try:
-    import torch
-except ImportError as e:
-    record_import_error("torch", "Torch could not be imported!", e)
-
-try:
-    import tensorflow as tf
-except ImportError as e:
-    record_import_error("tensorflow", "TensorFlow could not be imported!", e)
-
 
 class TextGeneration(Model):
     """ Generates target sentence/ids using a base model.
@@ -156,6 +146,8 @@ class TextGeneration(Model):
                 if hasattr(self.inner_model.config, k):
                     del text_generation_params[k]
         if self.model_type == "pt":
+            # import pytorch lazily
+            import torch
             # create torch tensors and move to device
             # TODO: SML: why move the model from where it was? the could mess with the user env (i.e. it breaks piplines)
             # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') if self.device is None else self.device
@@ -170,6 +162,8 @@ class TextGeneration(Model):
                     inputs = inputs.to(self.device)
                 outputs = self.inner_model.generate(**inputs, **text_generation_params).detach().cpu().numpy()
         elif self.model_type == "tf":
+            # import tensorflow lazily
+            import tensorflow as tf
             if self.inner_model.config.is_encoder_decoder:
                 inputs = self.get_inputs(X)
             else:
